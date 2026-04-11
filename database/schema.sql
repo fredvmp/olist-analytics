@@ -43,7 +43,7 @@ CREATE TABLE products (
     product_width_cm NUMERIC
 );
 
--- 5. Tabla de Pedidos (El corazón del dataset)
+-- 5. Tabla de Pedidos
 CREATE TABLE orders (
     order_id VARCHAR(32) PRIMARY KEY,
     customer_id VARCHAR(32) NOT NULL,
@@ -59,7 +59,7 @@ CREATE TABLE orders (
 );
 
 -- 6. Tabla de Artículos por Pedido
-CREATE TABLE order_items (
+CREATE TABLE  (
     order_id VARCHAR(32) NOT NULL,
     order_item_id INTEGER NOT NULL,
     product_id VARCHAR(32) NOT NULL,
@@ -95,7 +95,7 @@ CREATE TABLE order_reviews (
     review_score INTEGER NOT NULL,
     review_comment_title TEXT,
     review_comment_message TEXT,
-    review_creation_date TIMESTAMP NOT NULL,
+    review_creation_date     NOT NULL,
     review_answer_timestamp TIMESTAMP,
     PRIMARY KEY (review_id, order_id), 
     CONSTRAINT fk_order_review
