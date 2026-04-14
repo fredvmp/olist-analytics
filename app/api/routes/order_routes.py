@@ -49,3 +49,6 @@ def user_retention() -> Response:
     if result is None:
         return jsonify({"message": "Error fetching data"}), 500
     return jsonify(result.reset_index().to_dict(orient='records'))
+
+
+

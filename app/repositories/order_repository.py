@@ -60,3 +60,5 @@ def fetch_user_retention() -> List[Tuple]:
     with get_db_cursor() as cursor:
         cursor.execute(query)
         return cursor.fetchall()
+
+

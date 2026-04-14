@@ -25,6 +25,8 @@ def get_user_retention_percentage() -> pd.DataFrame:
         Retorna None si no hay datos disponibles.
     """
 
+    logger.info("Executing order_service: get_user_retention_percentage")
+
     rows = fetch_user_retention()
     if not rows:
         return None
@@ -52,3 +54,5 @@ def get_user_retention_percentage() -> pd.DataFrame:
     retention_matrix.columns = retention_matrix.columns.astype(str)
 
     return retention_matrix
+
+
