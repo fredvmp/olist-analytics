@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, Response
 from app.utils.logger import logger
-from app.services.order_service import get_number_orders, get_user_retention_percentage
+from app.services.order_service import get_number_orders, get_user_retention_percentage, get_logistics_sla
 
 
 orders_bp = Blueprint("orders", __name__, url_prefix="/orders")
@@ -52,3 +52,21 @@ def user_retention() -> Response:
 
 
 
+@orders_bp.route("/logistic-sla", methods=["GET"])
+def logistics_sla() -> Response:
+    """
+    Proporciona métricas de rendimiento logístico y SLA.
+    
+    Procesa las fechas de pedidos entregados para calcular desviaciones en la 
+    promesa de entrega y desglosar los tiempos de procesamiento.
+    
+    Returns:
+        Response: Objeto JSON con registros de pedidos incluyendo estados geográficos,
+                 tiempos de preparación, tránsito y estado del cumplimiento (SLA).
+    """
+
+    logger.info("GET /orders/logistic-sla")
+    result = get_logistics_sla()
+    if result is None:
+        return jsonify({"message": "Error fetching data"}), 500
+    return jsonify(result.to_dict(orient='records'))

@@ -62,3 +62,35 @@ def fetch_user_retention() -> List[Tuple]:
         return cursor.fetchall()
 
 
+def fetch_logistics_sla() -> List[Tuple]:
+    """
+    Extrae hitos temporales y datos geográficos.
+    
+    Filtra únicamente pedidos con estado 'delivered' que poseen registros 
+    completos de fechas de salida (carrier) y llegada (customer).
+    
+    Returns:
+        List[Tuple]: Lista de tuplas con order_id, fechas clave y estados (customer/seller).
+    """
+
+    query = """
+        SELECT DISTINCT
+            o.order_id,
+            o.order_purchase_timestamp AS purchase_timestamp,
+            o.order_delivered_carrier_date AS delivered_carrier_date,
+            o.order_delivered_customer_date AS delivered_customer_date,
+            o.order_estimated_delivery_date AS estimated_delivery_date,
+            c.customer_state,
+            s.seller_state
+        FROM customers c
+        JOIN orders o ON o.customer_id = c.customer_id
+        JOIN order_items oi ON oi.order_id = o.order_id
+        JOIN sellers s ON s.seller_id = oi.seller_id
+        WHERE o.order_status = 'delivered' 
+            AND o.order_delivered_customer_date IS NOT NULL
+            AND o.order_delivered_carrier_date IS NOT NULL
+    """
+
+    with get_db_cursor() as cursor:
+        cursor.execute(query)
+        return cursor.fetchall()

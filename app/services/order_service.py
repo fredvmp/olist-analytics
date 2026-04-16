@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from app.utils.logger import logger
-from app.repositories.order_repository import fetch_number_orders, fetch_user_retention
+from app.repositories.order_repository import fetch_number_orders, fetch_user_retention, fetch_logistics_sla
 
 
 def get_number_orders():
@@ -34,10 +34,12 @@ def get_user_retention_percentage() -> pd.DataFrame:
     df = pd.DataFrame(rows, columns=[
         "customer_id", "purchase_month", "cohort_month"])
 
-    df["purchase_month"] = pd.to_datetime(df["purchase_month"]).dt.to_period("M")
+    df["purchase_month"] = pd.to_datetime(
+        df["purchase_month"]).dt.to_period("M")
     df["cohort_month"] = pd.to_datetime(df["cohort_month"]).dt.to_period("M")
 
-    df["cohort_index"] = (df["purchase_month"] - df["cohort_month"]).apply(lambda x: x.n)
+    df["cohort_index"] = (df["purchase_month"] -
+                          df["cohort_month"]).apply(lambda x: x.n)
 
     pivot = df.pivot_table(
         index="cohort_month",
@@ -56,3 +58,50 @@ def get_user_retention_percentage() -> pd.DataFrame:
     return retention_matrix
 
 
+def get_logistics_sla() -> pd.DataFrame:
+    """
+    Transforma los datos crudos de logística en métricas de días y estados.
+
+    Calcula:
+    - sla_delta_days: Diferencia entre entrega real y estimada.
+    - prep_time_days: Tiempo de preparación del vendedor.
+    - transit_time_days: Tiempo en manos del transportista.
+    - sla_status: Clasificación según el tiempo de entrega (Late, Early, On-Time).
+
+    Returns:
+        pd.DataFrame: DataFrame procesado para Power BI.
+    """
+
+    rows = fetch_logistics_sla()
+
+    df = pd.DataFrame(rows, columns=["order_id", "purchase_timestamp", "delivered_carrier_date",
+                      "delivered_customer_date", "estimated_delivery_date", "customer_state", "seller_state"])
+
+    for col in ["purchase_timestamp", "delivered_carrier_date",
+                "delivered_customer_date", "estimated_delivery_date"]:
+        df[col] = pd.to_datetime(df[col])
+
+    df["sla_delta_days"] = (
+        df["delivered_customer_date"] - df["estimated_delivery_date"]).dt.days
+    df["prep_time_days"] = (df["delivered_carrier_date"] -
+                            df["purchase_timestamp"]).dt.days
+    df["transit_time_days"] = (
+        df["delivered_customer_date"] - df["delivered_carrier_date"]).dt.days
+
+    # df["sla_status"] = np.where(df["sla_delta_days"] > 0, "Late", "On-Time")
+
+    conditions = [
+        df["sla_delta_days"] > 0,
+        df["sla_delta_days"] < 0,
+        df["sla_delta_days"] == 0
+    ]
+    choices = ["Late", "Early", "On-Time"]
+    df["sla_status"] = np.select(conditions, choices, default="Unknown")
+
+    df["prep_time_days"] = df["prep_time_days"].clip(lower=0)
+    df["transit_time_days"] = df["transit_time_days"].clip(lower=0)
+
+    df = df.drop(columns=["delivered_carrier_date",
+                 "delivered_customer_date", "estimated_delivery_date"])
+
+    return df
