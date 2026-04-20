@@ -51,15 +51,14 @@ def user_retention() -> Response:
     return jsonify(result.reset_index().to_dict(orient='records'))
 
 
-
 @orders_bp.route("/logistic-sla", methods=["GET"])
 def logistics_sla() -> Response:
     """
     Proporciona métricas de rendimiento logístico y SLA.
-    
+
     Procesa las fechas de pedidos entregados para calcular desviaciones en la 
     promesa de entrega y desglosar los tiempos de procesamiento.
-    
+
     Returns:
         Response: Objeto JSON con registros de pedidos incluyendo estados geográficos,
                  tiempos de preparación, tránsito y estado del cumplimiento (SLA).

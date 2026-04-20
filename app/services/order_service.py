@@ -38,9 +38,11 @@ def get_user_retention_percentage() -> pd.DataFrame:
         df["purchase_month"]).dt.to_period("M")
     df["cohort_month"] = pd.to_datetime(df["cohort_month"]).dt.to_period("M")
 
+    # Cálculo de meses transcurridos desde la primera compra
     df["cohort_index"] = (df["purchase_month"] -
                           df["cohort_month"]).apply(lambda x: x.n)
 
+    # Pivot table con los clientes únicos por mes de cohorte e índice
     pivot = df.pivot_table(
         index="cohort_month",
         columns="cohort_index",
@@ -49,6 +51,7 @@ def get_user_retention_percentage() -> pd.DataFrame:
         fill_value=0
     )
 
+    # Cálculo del porcentaje de retención dividiendo cada mes entre el tamaño inicial (mes 0)
     cohort_sizes = pivot.iloc[:, 0]
     retention_matrix = pivot.divide(cohort_sizes, axis=0).round(4)
 
@@ -77,10 +80,12 @@ def get_logistics_sla() -> pd.DataFrame:
     df = pd.DataFrame(rows, columns=["order_id", "purchase_timestamp", "delivered_carrier_date",
                       "delivered_customer_date", "estimated_delivery_date", "customer_state", "seller_state"])
 
+    # Conversión de columnas de fecha a objetos datetime
     for col in ["purchase_timestamp", "delivered_carrier_date",
                 "delivered_customer_date", "estimated_delivery_date"]:
         df[col] = pd.to_datetime(df[col])
 
+    # Cálculo de KPIs temporales (Diferencia vs Estimado, Preparación y Tránsito)
     df["sla_delta_days"] = (
         df["delivered_customer_date"] - df["estimated_delivery_date"]).dt.days
     df["prep_time_days"] = (df["delivered_carrier_date"] -
@@ -90,17 +95,20 @@ def get_logistics_sla() -> pd.DataFrame:
 
     # df["sla_status"] = np.where(df["sla_delta_days"] > 0, "Late", "On-Time")
 
+    # Clasificación del estado de entrega según el cumplimiento de la fecha estimada
     conditions = [
-        df["sla_delta_days"] > 0,
-        df["sla_delta_days"] < 0,
-        df["sla_delta_days"] == 0
+        df["sla_delta_days"] > 0,   # Entregado después de la fecha estimada
+        df["sla_delta_days"] < 0,   # Entregado antes de la fecha estimada
+        df["sla_delta_days"] == 0   # Entregado el día exacto
     ]
     choices = ["Late", "Early", "On-Time"]
     df["sla_status"] = np.select(conditions, choices, default="Unknown")
 
+    # Asegurar que no existan días negativos por errores en data de origen
     df["prep_time_days"] = df["prep_time_days"].clip(lower=0)
     df["transit_time_days"] = df["transit_time_days"].clip(lower=0)
 
+    # Limpieza del DataFrame final
     df = df.drop(columns=["delivered_carrier_date",
                  "delivered_customer_date", "estimated_delivery_date"])
 

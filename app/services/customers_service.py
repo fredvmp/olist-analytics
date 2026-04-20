@@ -29,12 +29,14 @@ def get_customers_rfm() -> pd.DataFrame:
     df["monetary"] = pd.to_numeric(df["monetary"])
     df["frequency"] = pd.to_numeric(df["frequency"])
 
+    # Cálculo de quintiles para cada métrica. Recency es inversa (menos días es mejor score)
     df["r"] = pd.qcut(df["recency"], q=5, labels=[
                       5, 4, 3, 2, 1], duplicates="drop")
     df["f"] = pd.qcut(df["frequency"], q=5, labels=False,
                       duplicates="drop") + 1
     df["m"] = pd.qcut(df["monetary"], q=5, labels=False, duplicates="drop") + 1
 
+    # Concatenado 'RFM' para facilitar el filtrado
     df["rfm"] = df["r"].astype(str) + df["f"].astype(str) + df["m"].astype(str)
 
     """
@@ -51,6 +53,7 @@ def get_customers_rfm() -> pd.DataFrame:
     df["segment"] = df["rfm"].replace(segment_map, regex=True)
     """
 
+    # Segmentación basada en patrones del código RFM
     conditions = [
         df["rfm"].str.contains(r"^[4-5][4-5][4-5]$"),
         df["rfm"].str.contains(r"^[4-5][2-5].$"),
@@ -60,14 +63,14 @@ def get_customers_rfm() -> pd.DataFrame:
         df["rfm"].str.contains(r"^[1-2][4-5].$"),
         df["rfm"].str.contains(r"^[1-2][1-2].$")
     ]
-
+    # Etiquetas
     choices = [
         "Champions", "Loyal Customers", "New Customers", "Potential Loyalists", "At Risk", "Can't Lose Them", "Hibernating"
     ]
 
+    # Aplicación de segmentos y formateo final de scores
     df["segment"] = np.select(
         conditions, choices, default="Standard Customers")
-
     df[["r", "f", "m"]] = df[["r", "f", "m"]].astype(int)
 
     return df

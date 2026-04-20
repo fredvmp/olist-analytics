@@ -6,10 +6,10 @@ from typing import List, Tuple
 def fetch_product_abc() -> List[Tuple]:
     """
     Consulta en la base de datos el ingreso total por cada producto vendido.
-    
+
     Une las tablas de pedidos y productos para sumar ventas (solo 'delivered') y traduce 
     las categorías al inglés. Si un producto no tiene categoría, lo marca como 'unknown'.
-    
+
     Returns:
         List[Tuple]: Lista con (product_id, total_revenue, category).
     """

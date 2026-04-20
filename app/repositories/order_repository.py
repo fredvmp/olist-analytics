@@ -65,10 +65,10 @@ def fetch_user_retention() -> List[Tuple]:
 def fetch_logistics_sla() -> List[Tuple]:
     """
     Extrae hitos temporales y datos geográficos.
-    
+
     Filtra únicamente pedidos con estado 'delivered' que poseen registros 
     completos de fechas de salida (carrier) y llegada (customer).
-    
+
     Returns:
         List[Tuple]: Lista de tuplas con order_id, fechas clave y estados (customer/seller).
     """

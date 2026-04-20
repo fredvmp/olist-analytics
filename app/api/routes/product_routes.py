@@ -10,7 +10,7 @@ products_bp = Blueprint("products", __name__, url_prefix="/products")
 def product_abc():
     """
     Endpoint para obtener el ranking de importancia de productos.
-    
+
     Sirve los datos del análisis ABC en formato JSON para visualizaciones 
     de inventario y rentabilidad en el dashboard.
     """

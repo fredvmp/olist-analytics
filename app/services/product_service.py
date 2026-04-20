@@ -7,12 +7,12 @@ from app.repositories.product_repository import fetch_product_abc
 def get_product_abc() -> pd.DataFrame:
     """
     Calcula la clasificación ABC (Pareto) basándose en el ingreso acumulado.
-    
+
     Ordena los productos de mayor a menor venta y les asigna una etiqueta:
     - 'A': Generan el 80% del dinero (Productos estrella).
     - 'B': Generan el siguiente 15% (Soporte).
     - 'C': Generan el último 5% (baja rotación).
-    
+
     Returns:
         pd.DataFrame: Tabla con ingresos, % acumulado y su etiqueta ABC.
     """
@@ -28,11 +28,14 @@ def get_product_abc() -> pd.DataFrame:
     df["total_revenue"] = pd.to_numeric(df["total_revenue"])
     df = df.sort_values(by='total_revenue', ascending=False)
 
+    # Cálculo del ingreso acumulado
     df["cumulative_revenue"] = df["total_revenue"].cumsum()
 
+    # Cálculo del porcentaje sobre el total de ventas
     total_sales = df["total_revenue"].sum()
     df["percentage"] = df["cumulative_revenue"] / total_sales
 
+    # Categorización -> A (80%), B (95%) y C (100%)
     conditions = [
         df["percentage"] <= 0.80,
         df["percentage"] <= 0.95,
