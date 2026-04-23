@@ -42,3 +42,74 @@ def fetch_customers_rfm() -> List[Tuple]:
     with get_db_cursor() as cursor:
         cursor.execute(query)
         return cursor.fetchall()
+
+
+def fetch_repurchase_retention() -> List[Tuple]:
+    """
+    Consulta en la base de datos el historial de transacciones para extraer el viaje entre la 
+    primera y segunda compra de los usuarios recurrentes. Utiliza CTEs y 
+    Window Functions para ordenar cronológicamente los pedidos, alinear las categorías compradas 
+    y calcular el tiempo exacto de retención, excluyendo compras simultáneas o errores 
+    (menos de 1 hora de diferencia).
+
+    Returns:
+        List[Tuple]: Una lista de tuplas con los datos en bruto extraídos de la base de datos. 
+        Cada tupla representa:
+        - customer_unique_id (str): Identificador único del comprador.
+        - first_purchase (datetime): Timestamp del primer pedido.
+        - first_category (str): Nombre de la categoría principal del primer pedido.
+        - second_purchase (datetime): Timestamp del pedido en el que regresó.
+        - second_category (str): Nombre de la categoría principal de su pedido de regreso.
+        - days_between_orders (int): Días exactos transcurridos entre ambos eventos.
+    """
+
+    query = """
+        WITH products_categories_1 AS (
+            SELECT 
+                c.customer_unique_id,
+                o.order_id,
+                MAX(pcnt.product_category_name_english) AS category,
+                o.order_purchase_timestamp
+            FROM customers c
+            JOIN orders o ON o.customer_id = c.customer_id
+            JOIN order_items oi ON oi.order_id = o.order_id
+            JOIN products p ON p.product_id = oi.product_id
+            JOIN product_category_name_translation pcnt ON pcnt.product_category_name = p.product_category_name
+            GROUP BY c.customer_unique_id, o.order_id, o.order_purchase_timestamp
+        ),
+        products_categories_2 AS (
+            SELECT 	
+                customer_unique_id,
+                order_id,
+                category,
+                order_purchase_timestamp AS first_purchase,
+                LEAD(category) OVER (
+                    PARTITION BY customer_unique_id 
+                    ORDER BY order_purchase_timestamp ASC
+                ) AS second_category,
+                LEAD(order_purchase_timestamp) OVER (
+                    PARTITION BY customer_unique_id 
+                    ORDER BY order_purchase_timestamp ASC
+                ) AS second_purchase,
+                ROW_NUMBER() OVER (
+                    PARTITION BY customer_unique_id
+                    ORDER BY order_purchase_timestamp ASC
+                ) AS n
+            FROM products_categories_1 
+        )
+        SELECT 
+            customer_unique_id,
+            first_purchase,
+            category AS first_category,
+            second_purchase,
+            second_category,
+            EXTRACT(DAY FROM (second_purchase - first_purchase)) AS days_between_orders
+        FROM products_categories_2
+        WHERE n = 1 
+            AND second_purchase IS NOT NULL
+            AND (second_purchase - first_purchase) > INTERVAL '1 hour'
+    """
+
+    with get_db_cursor() as cursor:
+        cursor.execute(query)
+        return cursor.fetchall()

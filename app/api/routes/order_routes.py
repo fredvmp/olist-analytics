@@ -48,7 +48,7 @@ def user_retention() -> Response:
     result = get_user_retention_percentage()
     if result is None:
         return jsonify({"message": "Error fetching data"}), 500
-    return jsonify(result.reset_index().to_dict(orient='records'))
+    return jsonify(result.reset_index().to_dict(orient="records"))
 
 
 @orders_bp.route("/logistic-sla", methods=["GET"])
@@ -68,4 +68,4 @@ def logistics_sla() -> Response:
     result = get_logistics_sla()
     if result is None:
         return jsonify({"message": "Error fetching data"}), 500
-    return jsonify(result.to_dict(orient='records'))
+    return jsonify(result.to_dict(orient="records"))

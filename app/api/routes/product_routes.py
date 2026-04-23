@@ -19,4 +19,4 @@ def product_abc():
     result = get_product_abc()
     if result is None:
         return jsonify({"message": "Error fetching data"}), 500
-    return jsonify(result.to_dict(orient='records'))
+    return jsonify(result.to_dict(orient="records"))
