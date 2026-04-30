@@ -30,3 +30,38 @@ def fetch_product_abc() -> List[Tuple]:
     with get_db_cursor() as cursor:
         cursor.execute(query)
         return cursor.fetchall()
+
+
+def fetch_category_abc() -> List[Tuple]:
+    """
+    Consulta en la base de datos el ingreso total acumulado por cada categoría.
+
+    Utiliza una CTE para consolidar las ventas y hace un RANK para organizar 
+    las categorías según sus ingresos y traduce las categorías al inglés.
+
+    Returns:
+        List[Tuple]: Lista de registros que incluye el ranking de ventas, el nombre 
+        de la categoría y su ingreso total facturado.
+    """
+
+    query = """
+        WITH revenue AS (
+            SELECT 
+                pcnt.product_category_name_english AS category,
+                SUM(oi.price) AS category_revenue
+            FROM order_items oi
+            JOIN products p ON p.product_id = oi.product_id
+            JOIN product_category_name_translation pcnt ON pcnt.product_category_name = p.product_category_name	
+            GROUP BY pcnt.product_category_name_english
+        )
+        SELECT
+            RANK() OVER(ORDER BY SUM(r.category_revenue) DESC),
+            r.category,
+            r.category_revenue
+        FROM revenue r
+        GROUP BY r.category, r.category_revenue
+    """
+
+    with get_db_cursor() as cursor:
+        cursor.execute(query)
+        return cursor.fetchall()
