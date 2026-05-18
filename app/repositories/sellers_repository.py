@@ -62,3 +62,44 @@ def fetch_seller_scoring() -> List[Tuple]:
     with get_db_cursor() as cursor:
         cursor.execute(query)
         return cursor.fetchall()
+
+
+def fetch_category_hhi() -> List[Tuple]:
+    """
+    Consulta en la base de datos la distribución de ingresos por vendedor y categoría.
+
+    Utiliza una CTE para calcular las ventas individuales por seller en cada categoría y, 
+    mediante una Window Function (SUM OVER PARTITION), adjunta en cada fila el total de 
+    ingresos globales de dicha categoría. Esto permite calcular las cuotas de mercado de 
+    forma directa en la siguiente capa.
+
+    Returns:
+        List[Tuple]: Lista de tuplas con el desglose transaccional:
+        - seller_id: Identificador del vendedor.
+        - category: Nombre de la categoría en inglés.
+        - quantity_seller: Ingresos generados por el vendedor en la categoría.
+        - quantity_category: Ingresos totales generados por toda la categoría.
+    """
+
+    query = """
+        WITH sales_per_seller AS (
+            SELECT 
+                oi.seller_id,
+                pcnt.product_category_name_english AS category,
+                SUM(oi.price) AS quantity_seller
+            FROM order_items oi
+            JOIN products p ON p.product_id = oi.product_id
+            JOIN product_category_name_translation pcnt ON pcnt.product_category_name = p.product_category_name
+            GROUP BY oi.seller_id, pcnt.product_category_name_english
+        )
+        SELECT 
+            seller_id,
+            category,
+            quantity_seller,
+            SUM(quantity_seller) OVER (PARTITION BY category) AS quantity_category
+        FROM sales_per_seller
+    """
+
+    with get_db_cursor() as cursor:
+        cursor.execute(query)
+        return cursor.fetchall()

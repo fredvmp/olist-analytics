@@ -96,6 +96,8 @@ def get_repurchase_retention() -> pd.DataFrame:
           la fidelidad al tipo de producto frente a la marca general.
     """
 
+    logger.info("Executing customer_service: get_repurchase_retention")
+
     rows = fetch_repurchase_retention()
 
     df = pd.DataFrame(rows, columns=["customer_id", "first_purchase", "first_category",
